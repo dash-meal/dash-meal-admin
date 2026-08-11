@@ -1,7 +1,7 @@
 import axios, { type AxiosError } from "axios";
 import { toast } from "@/hooks/use-toast";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://dash-meal-backend.onrender.com/api/v1";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://dashmeal-3ix5.onrender.com/api/v1";
 
 export const api = axios.create({
   baseURL: API_URL,
