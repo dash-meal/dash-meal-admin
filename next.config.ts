@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 import withPWAInit from "@ducanh2912/next-pwa";
-import path from "path";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const withPWA = withPWAInit({
@@ -30,12 +29,7 @@ const config = withPWA(withNextIntl(baseConfig)) as any;
 const intlAlias = config.experimental?.turbo?.resolveAlias ?? {};
 if (config.experimental?.turbo) delete config.experimental.turbo;
 
-// turbopack.root MUST be the workspace root (monorepo root), not apps/admin,
-// so Turbopack can access node_modules/.pnpm/* through pnpm symlinks.
-const workspaceRoot = path.resolve(process.cwd(), "../..");
-
 config.turbopack = {
-  root: workspaceRoot,
   resolveAlias: { ...intlAlias, ...config.turbopack?.resolveAlias },
 };
 
