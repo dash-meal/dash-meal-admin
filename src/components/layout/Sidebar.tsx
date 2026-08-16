@@ -14,7 +14,7 @@ import {
   BarChart2, Bell, Settings, Building2, FileText,
   Users, Activity, Globe, ChevronRight, LogOut,
   UserCheck, Wallet, DollarSign, Megaphone, UsersRound,
-  Tag, LayoutGrid, ClipboardCheck, Download, MapPin, Video, LayoutList,
+  Tag, LayoutGrid, ClipboardCheck, Download, MapPin, LayoutList,
 } from "lucide-react";
 
 interface NavItem {
@@ -67,7 +67,6 @@ export function Sidebar({ locale }: { locale: string }) {
     { href: "/promotions",      label: t("promotions"),     icon: Tag },
     { href: "/wallet",          label: t("wallet"),         icon: Wallet },
     { href: "/ads",             label: t("ads"),            icon: Megaphone },
-    { href: "/reels",           label: "Réels",             icon: Video },
     { href: "/reports",         label: t("reports"),        icon: Download },
     { href: "/notifications",   label: t("notifications"),  icon: Bell },
     { href: "/settings",        label: t("settings"),       icon: Settings },
