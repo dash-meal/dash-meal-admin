@@ -18,8 +18,17 @@ interface StockItem {
   id: string;
   product_id: string;
   stock_qty: number;
-  products: { name_fr: string; price: number; image_url: string | null };
+  products: { name_fr: string; price: number; image_url: string | null; barcode: string | null; unit_type: string | null };
 }
+
+interface BranchVertical {
+  requires_barcode: boolean;
+  requires_unit_type: boolean;
+}
+
+const UNIT_LABELS: Record<string, string> = {
+  piece: "pièce", kg: "kg", g: "g", liter: "L", ml: "mL", pack: "pack", carton: "carton",
+};
 
 interface StockMovement {
   id: string;
@@ -91,10 +100,19 @@ export default function BranchStockPage() {
 
   const { data: alerts = [] } = useQuery<StockItem[]>({
     queryKey: ["branch-stock-alerts", branchId],
-    queryFn:  () => branchApiGet(`/stock/${branchId}/alerts`, { threshold: 5 }),
+    // Pas de threshold explicite : le backend résout le seuil par défaut du vertical de l'agence.
+    queryFn:  () => branchApiGet(`/stock/${branchId}/alerts`),
     enabled:  !!branchId,
     select: (d: any) => Array.isArray(d) ? d : d?.data ?? [],
   });
+
+  // Vertical de l'agence — pilote l'affichage code-barres/unité (route /branches/:id publique)
+  const { data: branch } = useQuery<{ branch_verticals: BranchVertical | null }>({
+    queryKey: ["branch-detail", branchId],
+    queryFn:  () => branchApiGet(`/branches/${branchId}`),
+    enabled:  !!branchId,
+  });
+  const vertical = branch?.branch_verticals ?? null;
 
   const { data: movements = [], isLoading: movLoading } = useQuery<StockMovement[]>({
     queryKey: ["branch-stock-movements", branchId],
@@ -130,9 +148,11 @@ export default function BranchStockPage() {
     onError: () => toast.error("Mise à jour échouée"),
   });
 
-  const filtered = stock.filter((s) =>
-    !search || s.products?.name_fr?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = stock.filter((s) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return s.products?.name_fr?.toLowerCase().includes(q) || s.products?.barcode?.toLowerCase() === q;
+  });
 
   const handleBulkSave = () => {
     const items = Object.entries(bulkEdits)
@@ -167,6 +187,15 @@ export default function BranchStockPage() {
         </div>
       </div>
 
+      {/* Rappel : stock plateforme ≠ stock physique réel du magasin */}
+      <div className="flex items-start gap-2 rounded-lg border border-blue-500/20 bg-blue-500/5 px-4 py-3">
+        <Package className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+        <p className="text-sm text-blue-700">
+          Ce stock est <strong>réservé aux commandes en ligne</strong> — il est distinct du stock physique réel en magasin.
+          Les ventes faites directement en magasin (hors plateforme) ne sont pas déduites ici.
+        </p>
+      </div>
+
       {/* Alerts banner */}
       {alerts.length > 0 && (
         <div className="flex items-center gap-3 rounded-xl bg-red-50 border border-red-200 px-4 py-3">
@@ -188,7 +217,7 @@ export default function BranchStockPage() {
           <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
-              placeholder="Chercher un produit..."
+              placeholder={vertical?.requires_barcode ? "Chercher un produit ou scanner un code-barres..." : "Chercher un produit..."}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
@@ -212,7 +241,11 @@ export default function BranchStockPage() {
                       <div key={item.id} className="flex items-center gap-4 px-4 py-3">
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-slate-800 truncate">{item.products?.name_fr}</p>
-                          <p className="text-xs text-slate-400">{formatCurrency(item.products?.price ?? 0)}</p>
+                          <p className="text-xs text-slate-400 flex items-center gap-1.5 flex-wrap">
+                            <span>{formatCurrency(item.products?.price ?? 0)}</span>
+                            {item.products?.unit_type && <span>· {UNIT_LABELS[item.products.unit_type] ?? item.products.unit_type}</span>}
+                            {item.products?.barcode && <span className="font-mono">· {item.products.barcode}</span>}
+                          </p>
                         </div>
                         {isBulkMode ? (
                           <Input

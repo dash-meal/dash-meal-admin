@@ -128,6 +128,16 @@ export default function BranchesPage() {
     queryFn: () => apiGet("/branches"),
   });
 
+  // Verticals gérés par le superadmin (superadmin/verticals) — remplace l'ancienne
+  // liste figée BRANCH_TYPE_OPTIONS pour permettre d'ajouter des types sans déploiement.
+  const { data: verticals } = useQuery<{ key: string; name_fr: string }[]>({
+    queryKey: ["branch-verticals"],
+    queryFn: () => apiGet("/branch-verticals"),
+  });
+  const typeOptions = (verticals ?? []).length > 0
+    ? verticals!.map((v) => ({ value: v.key, label: v.name_fr }))
+    : BRANCH_TYPE_OPTIONS;
+
   const { register, handleSubmit, reset, setValue, watch, formState: { isSubmitting } } = useForm<BranchForm>({
     resolver: zodResolver(BranchSchema),
     defaultValues: { type: "other", slot_duration: 30, slot_capacity: 5 },
@@ -297,7 +307,7 @@ export default function BranchesPage() {
                         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                           <Badge className={`text-[10px] ${statusCfg.color}`}>{statusCfg.label}</Badge>
                           <span className="text-xs text-slate-500">
-                            {BRANCH_TYPE_OPTIONS.find((o) => o.value === b.type)?.label ?? "📦 Autre"}
+                            {typeOptions.find((o) => o.value === b.type)?.label ?? "📦 Autre"}
                           </span>
                         </div>
                       </div>
@@ -385,7 +395,7 @@ export default function BranchesPage() {
                 <Select value={watchedType} onValueChange={(v) => setValue("type", v)}>
                   <SelectTrigger><SelectValue placeholder="Choisir un type..." /></SelectTrigger>
                   <SelectContent>
-                    {BRANCH_TYPE_OPTIONS.map((o) => (
+                    {typeOptions.map((o) => (
                       <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
                     ))}
                   </SelectContent>
